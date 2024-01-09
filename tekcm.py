@@ -15,12 +15,12 @@ import pydub
 from streamlit_webrtc import WebRtcMode, webrtc_streamer
 
 class WebRTCRecord:
-    def __init__(self):
+    def __init__(self, stun):
         self.webrtc_ctx = webrtc_streamer(
             key="sendonly-audio",
             mode=WebRtcMode.SENDONLY,
             audio_receiver_size=256,
-            rtc_configuration={"iceServers": [{"urls": ["stun:stun.xten.com:3478"]}]},
+            rtc_configuration={"iceServers": [{"urls": [stun]}]},
             media_stream_constraints={
                 "audio": True,
             },
@@ -76,12 +76,14 @@ lang_english = {0: "Japanese", 1: "Bulgarian"}
 mode_list = {0: "翻訳", 1: "添削", 2: "会話", 3: "添削回答"}
 mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
 model_list = ['gpt-3.5-turbo', 'gpt-3.5-turbo-instruct', 'gpt-4']
+stun_list = ['stun1.l.google.com:19302', 'stun2.l.google.com:19302', 'stun3.l.google.com:19302', 'stun4.l.google.com:19302', 'stun.xten.com:3478']
 
 with st.sidebar:
     openai_api_key = st.text_input("OpenAI API Key", key="api_key", type="password")
     client = OpenAI(api_key = openai_api_key)
     openai.api_key = openai_api_key
     model_select = st.selectbox(label='使用モデル', options=model_list, index=0)
+    stun_select = st.selectbox(label='STUNサーバ', options=stun_list, index=4)
 
 st.title('Tekcm 24 beta')
 #lang_input = st.radio(label='入力言語', options=(0,1), index=0, horizontal=True, format_func=lambda x: lang_list.get(x))
@@ -142,7 +144,8 @@ def erase(filename):
         os.remove(filename)
 
 # 録音プロセス始動
-webrtc_record = WebRTCRecord()
+stun_url = "stun:" + stun_select
+webrtc_record = WebRTCRecord(stun=stun_url)
 
 api_warning = st.empty()
 if not openai_api_key:
