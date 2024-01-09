@@ -93,36 +93,36 @@ api_warning = st.empty()
 if not openai_api_key:
     api_warning.warning('OpenAI API Keyを設定してください')
 
+hms = datetime.datetime.today()
+hmsstr = hms.strftime("%Y%m%d%H%M%S")
+input_file = pathlib.Path(hmsstr + '.wav')
+output_filename = hmsstr + '_out.wav'
+
 while True:
-    hms = datetime.datetime.today()
-    hmsstr = hms.strftime("%Y%m%d%H%M%S")
-    input_file = pathlib.Path(hmsstr + '.wav')
-    output_filename = hmsstr + '_out.wav'
+    if openai_api_key:
+        break
 
-    while True:
-        if openai_api_key:
-            break
+# 録音
+webrtc_record.recording(filename=str(input_file))
+while True:
+    if input_file.exists():
+        api_warning.empty()
+        break
 
-    # 録音
-    webrtc_record.recording(filename=str(input_file))
-    while True:
-        if input_file.exists():
-            api_warning.empty()
-            break
-    lang_input = int(lang_output)
-    if(mode == 0):
-        lang_input = 1 - int(lang_output)   # 翻訳モードの場合、入力言語と出力言語は異なる
-    with st.spinner('処理中...'):
-        text = speech_to_text(filename=str(input_file), language=lang_code.get(lang_input))
-        st.write(text)
+lang_input = int(lang_output)
+if(mode == 0):
+    lang_input = 1 - int(lang_output)   # 翻訳モードの場合、入力言語と出力言語は異なる
+with st.spinner('処理中...'):
+    text = speech_to_text(filename=str(input_file), language=lang_code.get(lang_input))
+    st.write(text)
 
-        # 変換
-        textbg = process(task=mode_english.get(mode), lang=lang_english.get(lang_output), content=text, model=str(model_select))
-        st.write(textbg)
+    # 変換
+    textbg = process(task=mode_english.get(mode), lang=lang_english.get(lang_output), content=text, model=str(model_select))
+    st.write(textbg)
 
-        text_to_speech(textbg, output_filename)
-    # 再生
-    playaudio(output_filename)
+    text_to_speech(textbg, output_filename)
+# 再生
+playaudio(output_filename)
 
-    erase(str(input_file))
-    erase(output_filename)
+erase(str(input_file))
+erase(output_filename)
