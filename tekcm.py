@@ -7,8 +7,6 @@ import pathlib
 import os
 import time
 import datetime
-import queue
-import record
 from record import WebRTCRecord
 import openai
 from openai._client import OpenAI
