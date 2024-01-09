@@ -12,7 +12,9 @@ import openai
 from openai._client import OpenAI
 import queue
 import pydub
+from audio_recorder_streamlit import audio_recorder
 from streamlit_webrtc import WebRtcMode, webrtc_streamer
+from tempfile import NamedTemporaryFile
 
 class WebRTCRecord:
     def __init__(self, stun):
@@ -90,6 +92,18 @@ st.title('Tekcm 24 beta')
 lang_output = st.radio(label='出力言語', options=(0,1), index=1, horizontal=True, format_func=lambda x: lang_list.get(x))
 mode = st.radio(label='何をお望みですか？', options=(0,1,2), index=0, horizontal=True, format_func=lambda x: mode_list.get(x))
 
+def speech_to_text2(audio_bytes, model='whisper-1', language='ja'):
+    with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
+        temp_file.write(audio_bytes)
+        temp_file.flush()
+        with open(temp_file.name, "rb") as fr:
+            transcription = client.audio.transcriptions.create(
+                model = model,
+                file = fr,
+                language=language
+            )
+    return transcription.text
+
 def speech_to_text(filename, model='whisper-1', language='ja'):
     with open(filename, "rb") as fr:
         transcription = client.audio.transcriptions.create(
@@ -145,35 +159,43 @@ def erase(filename):
 
 # 録音プロセス始動
 stun_url = "stun:" + stun_select
-webrtc_record = WebRTCRecord(stun=stun_url)
+#webrtc_record = WebRTCRecord(stun=stun_url)
+
 
 api_warning = st.empty()
 if not openai_api_key:
     api_warning.warning('OpenAI API Keyを設定してください')
 
 while True:
+    if openai_api_key:
+        break
+
+audio_bytes = audio_recorder(pause_threshold=30)
+    
+# Convert audio to text using OpenAI Whisper API
+if audio_bytes:
+
+#while True:
     hms = datetime.datetime.today()
     hmsstr = hms.strftime("%Y%m%d%H%M%S")
     input_file = pathlib.Path(hmsstr + '.wav')
     output_filename = hmsstr + '_out.wav'
 
 
-    while True:
-        if openai_api_key:
-            break
-
     # 録音
-    webrtc_record.recording(filename=str(input_file))
-    while True:
-        if input_file.exists():
-            api_warning.empty()
-            break
+#    webrtc_record.recording(filename=str(input_file))
+#    while True:
+#        if input_file.exists():
+#            api_warning.empty()
+#            break
+    api_warning.empty()
 
     lang_input = int(lang_output)
     if(mode == 0):
         lang_input = 1 - int(lang_output)   # 翻訳モードの場合、入力言語と出力言語は異なる
     with st.spinner('処理中...'):
-        text = speech_to_text(filename=str(input_file), language=lang_code.get(lang_input))
+#        text = speech_to_text(filename=str(input_file), language=lang_code.get(lang_input))
+        text = speech_to_text2(audio_bytes, language=lang_code.get(lang_input))
         st.write(text)
 
         # 変換

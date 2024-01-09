@@ -4,4 +4,4 @@ pydub==0.25.1
 streamlit_webrtc==0.47.1
 pathlib==1.0.1
 openai==1.6.1
-
+audio_recorder_streamlit==0.0.8
