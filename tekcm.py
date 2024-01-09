@@ -8,33 +8,10 @@ import os
 import time
 import datetime
 import queue
-import pydub
+import record
+from record import WebRTCRecord
 import openai
-from streamlit_webrtc import WebRtcMode, webrtc_streamer
 from openai._client import OpenAI
-
-RECORD = """
-  const sleep = time => new Promise(resolve => setTimeout(resolve, time))
-  const b2text = blob => new Promise(resolve => {
-    const reader = new FileReader()
-    reader.onloadend = e => resolve(e.srcElement.result)
-    reader.readAsDataURL(blob)
-  })
-  var record = time => new Promise(async resolve => {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    recorder = new MediaRecorder(stream)
-    chunks = []
-    recorder.ondataavailable = e => chunks.push(e.data)
-    recorder.start()
-    await sleep(time)
-    recorder.onstop = async ()=>{
-      blob = new Blob(chunks)
-      text = await b2text(blob)
-      resolve(text)
-    }
-    recorder.stop()
-  })
-"""
 
 
 # オプション
@@ -50,64 +27,6 @@ with st.sidebar:
     client = OpenAI(api_key = openai_api_key)
     openai.api_key = openai_api_key
     model_select = st.selectbox(label='使用モデル', options=model_list, index=0)
-
-#client = OpenAI(api_key = os.environ["OPENAI_API_KEY"])
-#openai.api_key = os.environ["OPENAI_API_KEY"]
-
-class WebRTCRecord:
-    def __init__(self):
-        self.webrtc_ctx = webrtc_streamer(
-            key="sendonly-audio",
-            mode=WebRtcMode.SENDONLY,
-            audio_receiver_size=256,
-            rtc_configuration={"iceServers": [{"urls": ["stun:stun.xten.com:3478"]}]},
-            media_stream_constraints={
-                "audio": True,
-            },
-        )
-
-        if "audio_buffer" not in st.session_state:
-            st.session_state["audio_buffer"] = pydub.AudioSegment.empty()
-
-    def recording(self, filename):
-        status_box = st.empty()
-
-        while True:
-            if self.webrtc_ctx.audio_receiver:
-                try:
-                    audio_frames = self.webrtc_ctx.audio_receiver.get_frames(timeout=1)
-                except queue.Empty:
-                    status_box.warning("No frame arrived.")
-                    continue
-
-                status_box.info("録音中...")
-
-                sound_chunk = pydub.AudioSegment.empty()
-                for audio_frame in audio_frames:
-                    sound = pydub.AudioSegment(
-                        data=audio_frame.to_ndarray().tobytes(),
-                        sample_width=audio_frame.format.bytes,
-                        frame_rate=audio_frame.sample_rate,
-                        channels=len(audio_frame.layout.channels),
-                    )
-                    sound_chunk += sound
-
-                if len(sound_chunk) > 0:
-                    st.session_state["audio_buffer"] += sound_chunk
-            else:
-                break
-
-        audio_buffer = st.session_state["audio_buffer"]
-
-        if not self.webrtc_ctx.state.playing and len(audio_buffer) > 0:
-            status_box.empty()
-            try:
-                audio_buffer.export(filename, format="wav")
-            except BaseException:
-                st.error("Error while Writing wav to disk")
-
-            # Reset
-            st.session_state["audio_buffer"] = pydub.AudioSegment.empty()
 
 st.title('Tekcm 24 beta')
 #lang_input = st.radio(label='入力言語', options=(0,1), index=0, horizontal=True, format_func=lambda x: lang_list.get(x))
