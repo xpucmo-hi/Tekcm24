@@ -7,10 +7,67 @@ import pathlib
 import os
 import time
 import datetime
-from record import WebRTCRecord
+#from record import WebRTCRecord
 import openai
 from openai._client import OpenAI
+import queue
+import pydub
+from streamlit_webrtc import WebRtcMode, webrtc_streamer
 
+class WebRTCRecord:
+    def __init__(self):
+        self.webrtc_ctx = webrtc_streamer(
+            key="sendonly-audio",
+            mode=WebRtcMode.SENDONLY,
+            audio_receiver_size=256,
+            rtc_configuration={"iceServers": [{"urls": ["stun:stun.xten.com:3478"]}]},
+            media_stream_constraints={
+                "audio": True,
+            },
+        )
+
+        if "audio_buffer" not in st.session_state:
+            st.session_state["audio_buffer"] = pydub.AudioSegment.empty()
+
+    def recording(self, filename):
+        status_box = st.empty()
+
+        while True:
+            if self.webrtc_ctx.audio_receiver:
+                try:
+                    audio_frames = self.webrtc_ctx.audio_receiver.get_frames(timeout=1)
+                except queue.Empty:
+                    status_box.warning("No frame arrived.")
+                    continue
+
+                status_box.info("録音中...")
+
+                sound_chunk = pydub.AudioSegment.empty()
+                for audio_frame in audio_frames:
+                    sound = pydub.AudioSegment(
+                        data=audio_frame.to_ndarray().tobytes(),
+                        sample_width=audio_frame.format.bytes,
+                        frame_rate=audio_frame.sample_rate,
+                        channels=len(audio_frame.layout.channels),
+                    )
+                    sound_chunk += sound
+
+                if len(sound_chunk) > 0:
+                    st.session_state["audio_buffer"] += sound_chunk
+            else:
+                break
+
+        audio_buffer = st.session_state["audio_buffer"]
+
+        if not self.webrtc_ctx.state.playing and len(audio_buffer) > 0:
+            status_box.empty()
+            try:
+                audio_buffer.export(filename, format="wav")
+            except BaseException:
+                st.error("Error while Writing wav to disk")
+
+            # Reset
+            st.session_state["audio_buffer"] = pydub.AudioSegment.empty()
 
 # オプション
 lang_list = {0: "日本語", 1: "български"}
@@ -91,36 +148,38 @@ api_warning = st.empty()
 if not openai_api_key:
     api_warning.warning('OpenAI API Keyを設定してください')
 
-hms = datetime.datetime.today()
-hmsstr = hms.strftime("%Y%m%d%H%M%S")
-input_file = pathlib.Path(hmsstr + '.wav')
-output_filename = hmsstr + '_out.wav'
-
 while True:
-    if openai_api_key:
-        break
+    hms = datetime.datetime.today()
+    hmsstr = hms.strftime("%Y%m%d%H%M%S")
+    input_file = pathlib.Path(hmsstr + '.wav')
+    output_filename = hmsstr + '_out.wav'
 
-# 録音
-webrtc_record.recording(filename=str(input_file))
-while True:
-    if input_file.exists():
-        api_warning.empty()
-        break
 
-lang_input = int(lang_output)
-if(mode == 0):
-    lang_input = 1 - int(lang_output)   # 翻訳モードの場合、入力言語と出力言語は異なる
-with st.spinner('処理中...'):
-    text = speech_to_text(filename=str(input_file), language=lang_code.get(lang_input))
-    st.write(text)
+    while True:
+        if openai_api_key:
+            break
 
-    # 変換
-    textbg = process(task=mode_english.get(mode), lang=lang_english.get(lang_output), content=text, model=str(model_select))
-    st.write(textbg)
+    # 録音
+    webrtc_record.recording(filename=str(input_file))
+    while True:
+        if input_file.exists():
+            api_warning.empty()
+            break
 
-    text_to_speech(textbg, output_filename)
-# 再生
-playaudio(output_filename)
+    lang_input = int(lang_output)
+    if(mode == 0):
+        lang_input = 1 - int(lang_output)   # 翻訳モードの場合、入力言語と出力言語は異なる
+    with st.spinner('処理中...'):
+        text = speech_to_text(filename=str(input_file), language=lang_code.get(lang_input))
+        st.write(text)
 
-erase(str(input_file))
-erase(output_filename)
+        # 変換
+        textbg = process(task=mode_english.get(mode), lang=lang_english.get(lang_output), content=text, model=str(model_select))
+        st.write(textbg)
+
+        text_to_speech(textbg, output_filename)
+    # 再生
+    playaudio(output_filename)
+
+    erase(str(input_file))
+    erase(output_filename)
