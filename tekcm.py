@@ -1,10 +1,7 @@
-import requests
 import streamlit as st
 import base64
-import pathlib
 import os
 import time
-import datetime
 import openai
 from openai._client import OpenAI
 from audio_recorder_streamlit import audio_recorder
@@ -88,22 +85,17 @@ def erase(filename):
 # 録音プロセス始動
 api_warning = st.empty()
 while not openai_api_key:
-    if not api_warning:
-        api_warning.warning('OpenAI API Keyを設定してください')
+    api_warning.warning('OpenAI API Keyを設定してください')
 
 audio_bytes = audio_recorder(pause_threshold=30)
     
 # Convert audio to text using OpenAI Whisper API
 if audio_bytes:
-    hms = datetime.datetime.today()
-    hmsstr = hms.strftime("%Y%m%d%H%M%S")
-    input_file = pathlib.Path(hmsstr + '.wav')
-    output_filename = hmsstr + '_out.wav'
-
     # 録音
     api_warning.empty()
 
     lang_input = int(lang_output)
+    textbg = str()
     if(mode == 0):
         lang_input = 1 - int(lang_output)   # 翻訳モードの場合、入力言語と出力言語は異なる
     with st.spinner('処理中...'):
@@ -114,9 +106,7 @@ if audio_bytes:
         textbg = process(task=mode_english.get(mode), lang=lang_english.get(lang_output), content=text, model=str(model_select))
         st.write(textbg)
 
-        text_to_speech(textbg, output_filename)
-    # 再生
-    playaudio(output_filename)
-
-    erase(str(input_file))
-    erase(output_filename)
+    with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
+        text_to_speech(textbg, temp_file.name)
+        # 再生
+        playaudio(temp_file.name)
