@@ -1,75 +1,14 @@
 import requests
 import streamlit as st
 import base64
-from base64 import b64encode
-from base64 import b64decode
 import pathlib
 import os
 import time
 import datetime
-#from record import WebRTCRecord
 import openai
 from openai._client import OpenAI
-import queue
-import pydub
 from audio_recorder_streamlit import audio_recorder
-from streamlit_webrtc import WebRtcMode, webrtc_streamer
 from tempfile import NamedTemporaryFile
-
-class WebRTCRecord:
-    def __init__(self, stun):
-        self.webrtc_ctx = webrtc_streamer(
-            key="sendonly-audio",
-            mode=WebRtcMode.SENDONLY,
-            audio_receiver_size=256,
-            rtc_configuration={"iceServers": [{"urls": [stun]}]},
-            media_stream_constraints={
-                "audio": True,
-            },
-        )
-
-        if "audio_buffer" not in st.session_state:
-            st.session_state["audio_buffer"] = pydub.AudioSegment.empty()
-
-    def recording(self, filename):
-        status_box = st.empty()
-
-        while True:
-            if self.webrtc_ctx.audio_receiver:
-                try:
-                    audio_frames = self.webrtc_ctx.audio_receiver.get_frames(timeout=1)
-                except queue.Empty:
-                    status_box.warning("No frame arrived.")
-                    continue
-
-                status_box.info("録音中...")
-
-                sound_chunk = pydub.AudioSegment.empty()
-                for audio_frame in audio_frames:
-                    sound = pydub.AudioSegment(
-                        data=audio_frame.to_ndarray().tobytes(),
-                        sample_width=audio_frame.format.bytes,
-                        frame_rate=audio_frame.sample_rate,
-                        channels=len(audio_frame.layout.channels),
-                    )
-                    sound_chunk += sound
-
-                if len(sound_chunk) > 0:
-                    st.session_state["audio_buffer"] += sound_chunk
-            else:
-                break
-
-        audio_buffer = st.session_state["audio_buffer"]
-
-        if not self.webrtc_ctx.state.playing and len(audio_buffer) > 0:
-            status_box.empty()
-            try:
-                audio_buffer.export(filename, format="wav")
-            except BaseException:
-                st.error("Error while Writing wav to disk")
-
-            # Reset
-            st.session_state["audio_buffer"] = pydub.AudioSegment.empty()
 
 # オプション
 lang_list = {0: "日本語", 1: "български"}
@@ -78,21 +17,19 @@ lang_english = {0: "Japanese", 1: "Bulgarian"}
 mode_list = {0: "翻訳", 1: "添削", 2: "会話", 3: "添削回答"}
 mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
 model_list = ['gpt-3.5-turbo', 'gpt-3.5-turbo-instruct', 'gpt-4']
-stun_list = ['stun1.l.google.com:19302', 'stun2.l.google.com:19302', 'stun3.l.google.com:19302', 'stun4.l.google.com:19302', 'stun.xten.com:3478']
 
 with st.sidebar:
     openai_api_key = st.text_input("OpenAI API Key", key="api_key", type="password")
     client = OpenAI(api_key = openai_api_key)
     openai.api_key = openai_api_key
     model_select = st.selectbox(label='使用モデル', options=model_list, index=0)
-    stun_select = st.selectbox(label='STUNサーバ', options=stun_list, index=4)
 
 st.title('Tekcm 24 beta')
 #lang_input = st.radio(label='入力言語', options=(0,1), index=0, horizontal=True, format_func=lambda x: lang_list.get(x))
 lang_output = st.radio(label='出力言語', options=(0,1), index=1, horizontal=True, format_func=lambda x: lang_list.get(x))
 mode = st.radio(label='何をお望みですか？', options=(0,1,2), index=0, horizontal=True, format_func=lambda x: mode_list.get(x))
 
-def speech_to_text2(audio_bytes, model='whisper-1', language='ja'):
+def speech_to_text(audio_bytes, model='whisper-1', language='ja'):
     with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
         temp_file.write(audio_bytes)
         temp_file.flush()
@@ -102,15 +39,6 @@ def speech_to_text2(audio_bytes, model='whisper-1', language='ja'):
                 file = fr,
                 language=language
             )
-    return transcription.text
-
-def speech_to_text(filename, model='whisper-1', language='ja'):
-    with open(filename, "rb") as fr:
-        transcription = client.audio.transcriptions.create(
-            model = model,
-            file = fr,
-            language=language
-        )
     return transcription.text
 
 def process(task: str, lang: str, content: str, model: str) -> str:
@@ -158,44 +86,28 @@ def erase(filename):
         os.remove(filename)
 
 # 録音プロセス始動
-stun_url = "stun:" + stun_select
-#webrtc_record = WebRTCRecord(stun=stun_url)
-
-
 api_warning = st.empty()
-if not openai_api_key:
-    api_warning.warning('OpenAI API Keyを設定してください')
-
-while True:
-    if openai_api_key:
-        break
+while not openai_api_key:
+    if not api_warning:
+        api_warning.warning('OpenAI API Keyを設定してください')
 
 audio_bytes = audio_recorder(pause_threshold=30)
     
 # Convert audio to text using OpenAI Whisper API
 if audio_bytes:
-
-#while True:
     hms = datetime.datetime.today()
     hmsstr = hms.strftime("%Y%m%d%H%M%S")
     input_file = pathlib.Path(hmsstr + '.wav')
     output_filename = hmsstr + '_out.wav'
 
-
     # 録音
-#    webrtc_record.recording(filename=str(input_file))
-#    while True:
-#        if input_file.exists():
-#            api_warning.empty()
-#            break
     api_warning.empty()
 
     lang_input = int(lang_output)
     if(mode == 0):
         lang_input = 1 - int(lang_output)   # 翻訳モードの場合、入力言語と出力言語は異なる
     with st.spinner('処理中...'):
-#        text = speech_to_text(filename=str(input_file), language=lang_code.get(lang_input))
-        text = speech_to_text2(audio_bytes, language=lang_code.get(lang_input))
+        text = speech_to_text(audio_bytes, language=lang_code.get(lang_input))
         st.write(text)
 
         # 変換
