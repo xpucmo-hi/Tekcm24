@@ -7,24 +7,28 @@ from openai._client import OpenAI
 from audio_recorder_streamlit import audio_recorder
 from tempfile import NamedTemporaryFile
 
-# オプション
-lang_list = {0: "日本語", 1: "български"}
-lang_code = {0: "ja", 1: "bg"}
-lang_english = {0: "Japanese", 1: "Bulgarian"}
-mode_list = {0: "翻訳", 1: "添削", 2: "会話", 3: "添削回答"}
-mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
-model_list = ['gpt-3.5-turbo', 'gpt-3.5-turbo-instruct', 'gpt-4']
+ss = st.session_state
+
+# 定数
+if 'lang_list' not in ss:
+    # オプション
+    ss.lang_list = {0: "日本語", 1: "български"}
+    ss.lang_code = {0: "ja", 1: "bg"}
+    ss.lang_english = {0: "Japanese", 1: "Bulgarian"}
+    ss.mode_list = {0: "翻訳", 1: "添削", 2: "会話", 3: "添削回答"}
+    ss.mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
+    ss.model_list = ['gpt-3.5-turbo', 'gpt-3.5-turbo-instruct', 'gpt-4']
 
 with st.sidebar:
     openai_api_key = st.text_input("OpenAI API Key", key="api_key", type="password")
     client = OpenAI(api_key = openai_api_key)
     openai.api_key = openai_api_key
-    model_select = st.selectbox(label='使用モデル', options=model_list, index=0)
+    model_select = st.selectbox(label='使用モデル', options=ss.model_list, index=0)
 
 st.title('Tekcm 24 beta')
 #lang_input = st.radio(label='入力言語', options=(0,1), index=0, horizontal=True, format_func=lambda x: lang_list.get(x))
-lang_output = st.radio(label='出力言語', options=(0,1), index=1, horizontal=True, format_func=lambda x: lang_list.get(x))
-mode = st.radio(label='何をお望みですか？', options=(0,1,2), index=0, horizontal=True, format_func=lambda x: mode_list.get(x))
+lang_output = st.radio(label='出力言語', options=(0,1), index=1, horizontal=True, format_func=lambda x: ss.lang_list.get(x))
+mode = st.radio(label='何をお望みですか？', options=(0,1,2), index=0, horizontal=True, format_func=lambda x: ss.mode_list.get(x))
 
 def speech_to_text(audio_bytes, model='whisper-1', language='ja'):
     with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
@@ -78,16 +82,12 @@ def playaudio(filename):
     time.sleep(0.5)
     audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
 
-def erase(filename):
-    if(os.path.isfile(filename)):
-        os.remove(filename)
-
 # 録音プロセス始動
 api_warning = st.empty()
 while not openai_api_key:
     api_warning.warning('OpenAI API Keyを設定してください')
 
-audio_bytes = audio_recorder(pause_threshold=30)
+audio_bytes = audio_recorder(pause_threshold=5)
     
 # Convert audio to text using OpenAI Whisper API
 if audio_bytes:
@@ -99,11 +99,11 @@ if audio_bytes:
     if(mode == 0):
         lang_input = 1 - int(lang_output)   # 翻訳モードの場合、入力言語と出力言語は異なる
     with st.spinner('処理中...'):
-        text = speech_to_text(audio_bytes, language=lang_code.get(lang_input))
+        text = speech_to_text(audio_bytes, language=ss.lang_code.get(lang_input))
         st.write(text)
 
         # 変換
-        textbg = process(task=mode_english.get(mode), lang=lang_english.get(lang_output), content=text, model=str(model_select))
+        textbg = process(task=ss.mode_english.get(mode), lang=ss.lang_english.get(lang_output), content=text, model=str(model_select))
         st.write(textbg)
 
     with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
