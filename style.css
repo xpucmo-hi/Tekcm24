@@ -1,0 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans&display=swap');
+
+
+html, body, [class*="css"] {
+    font-family: 'Sofia Sans';
+    font-weight: 400;
+}
