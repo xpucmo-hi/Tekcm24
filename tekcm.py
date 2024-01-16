@@ -2,14 +2,11 @@ import streamlit as st
 import base64
 import os
 import time
-import openai
 from openai._client import OpenAI
 from audio_recorder_streamlit import audio_recorder
 from tempfile import NamedTemporaryFile
 
 ss = st.session_state
-# with open('style.css') as f:
-    # st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 css = """
 @import url('https://fonts.googleapis.com/css2?family=Sofia+Sans&display=swap');
@@ -31,14 +28,9 @@ if 'lang_list' not in ss:
     ss.mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
     ss.model_list = ['gpt-3.5-turbo', 'gpt-3.5-turbo-instruct', 'gpt-4']
 
-with st.sidebar:
-    openai_api_key = st.text_input("OpenAI API Key", key="api_key", type="password")
-    client = OpenAI(api_key = openai_api_key)
-    openai.api_key = openai_api_key
-    model_select = st.selectbox(label='使用モデル', options=ss.model_list, index=0)
-
-st.title('Tekcm 24 beta')
-# tab1, tab2 = st.tabs(["基本", "トレーニング"])
+@st.cache_resource
+def load_client(api_key):
+    return OpenAI(api_key = api_key)
 
 def speech_to_text(audio_bytes, model='whisper-1', language='ja'):
     with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
@@ -57,7 +49,7 @@ def process(task: str, lang: str, content: str, model: str) -> str:
     {task} {lang}
     {content}
     """
-    response = openai.chat.completions.create(
+    response = client.chat.completions.create(
         model=model,
         messages=[
             {"role": "system", "content": prompt},
@@ -92,9 +84,19 @@ def playaudio(filename):
     time.sleep(0.5)
     audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
 
-api_warning = st.empty()
-while not openai_api_key:
-    api_warning.warning('OpenAI API Keyを設定してください')
+openai_api_key = os.environ.get("OPENAI_API_KEY")
+with st.sidebar:
+    if not openai_api_key:
+        openai_api_key = st.text_input("OpenAI API Key", key="api_key", type="password")
+    model_select = st.selectbox(label='使用モデル', options=ss.model_list, index=0)
+
+client = load_client(openai_api_key)
+
+st.title('Tekcm 24 beta')
+# tab1, tab2 = st.tabs(["基本", "トレーニング"])
+
+if not openai_api_key:
+     st.warning('OpenAI API Keyを設定してください')
 
 # with tab1:
 lang_output = st.radio(label='出力言語', options=(0,1), index=1, horizontal=True, format_func=lambda x: ss.lang_list.get(x))
@@ -106,8 +108,6 @@ audio_bytes = audio_recorder(pause_threshold=5)
 # Convert audio to text using OpenAI Whisper API
 if audio_bytes:
     # 録音
-    api_warning.empty()
-
     lang_input = int(lang_output)
     textbg = str()
     if(mode == 0):
