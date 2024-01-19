@@ -2,6 +2,7 @@ import streamlit as st
 import base64
 import os
 import time
+import csv
 from openai._client import OpenAI
 from audio_recorder_streamlit import audio_recorder
 from tempfile import NamedTemporaryFile
@@ -18,15 +19,6 @@ html, body, [class*="css"] {
 """
 st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
 
-# 定数
-if 'lang_list' not in ss:
-    # オプション
-    ss.lang_list = {0: "日本語", 1: "български"}
-    ss.lang_code = {0: "ja", 1: "bg"}
-    ss.lang_english = {0: "Japanese", 1: "Bulgarian"}
-    ss.mode_list = {0: "翻訳", 1: "添削", 2: "会話", 3: "添削回答"}
-    ss.mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
-    ss.model_list = ['gpt-3.5-turbo', 'gpt-3.5-turbo-instruct', 'gpt-4']
 
 @st.cache_resource
 def load_client(api_key):
@@ -84,11 +76,26 @@ def playaudio(filename):
     time.sleep(0.5)
     audio_placeholder.markdown(audio_html, unsafe_allow_html=True)
 
+# 定数
+if 'lang_list' not in ss:
+    # オプション
+    ss.lang_list = {0: "日本語", 1: "български"}
+    ss.lang_code = {0: "ja", 1: "bg"}
+    ss.lang_english = {0: "Japanese", 1: "Bulgarian"}
+    ss.mode_list = {0: "翻訳", 1: "添削", 2: "会話"}
+    ss.mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
+    ss.model_list = ['gpt-3.5-turbo', 'gpt-3.5-turbo-instruct', 'gpt-4']
+    ss.select_lang_code = ['be', 'bs', 'bg', 'hr', 'cs', 'hu', 'mk', 'pl', 'ro', 'ru', 'sr', 'sk', 'sl', 'tk']
+    ss.select_lang_english = ['Belarusian', 'Bosnian', 'Bulgarian', 'Croatian', 'Czech', 'Hungarian', 'Macedonian', 'Polish', 'Romanian', 'Russian', 'Serbian', 'Slovak', 'Slovenian', 'Turkish', 'Ukrainian']
+    ss.select_lang_list = ['Belarusian', 'Bosnian', 'български', 'Croatian', 'Czech', 'Hungarian', 'Macedonian', 'Polish', 'Romanian', 'Russian', 'Serbian', 'Slovak', 'Slovenian', 'Turkish', 'Ukrainian']
+    ss.lang_selectbox = {i: ss.select_lang_list[i] for i in range(0, len(ss.select_lang_list))}
+
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 with st.sidebar:
     if not openai_api_key:
         openai_api_key = st.text_input("OpenAI API Key", key="api_key", type="password")
     model_select = st.selectbox(label='使用モデル', options=ss.model_list, index=0)
+    lang_index = st.selectbox(label='対象言語', options=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14), index=2, format_func=lambda x: ss.lang_selectbox.get(x))
 
 client = load_client(openai_api_key)
 
@@ -103,7 +110,7 @@ lang_output = st.radio(label='出力言語', options=(0,1), index=1, horizontal=
 mode = st.radio(label='何をお望みですか？', options=(0,1,2), index=0, horizontal=True, format_func=lambda x: ss.mode_list.get(x))
 
 # 録音プロセス始動
-audio_bytes = audio_recorder(pause_threshold=5)
+audio_bytes = audio_recorder(text='何でも話してください',pause_threshold=5)
     
 # Convert audio to text using OpenAI Whisper API
 if audio_bytes:
