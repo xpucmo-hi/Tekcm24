@@ -109,53 +109,49 @@ if ss.selected_lang != lang_index:
 client = load_client(openai_api_key)
 
 st.title('Tekcm 24 beta')
-# tab1, tab2 = st.tabs(["基本", "トレーニング"])
+tab1, tab2 = st.tabs(["基本", "発音練習"])
 
 if not openai_api_key:
      st.warning('OpenAI API Keyを設定してください')
 
-# with tab1:
-lang_output = st.radio(label='出力言語', options=(0,1), index=1, horizontal=True, format_func=lambda x: ss.lang_list.get(x))
-mode = st.radio(label='何をお望みですか？', options=(0,1,2), index=0, horizontal=True, format_func=lambda x: ss.mode_list.get(x))
+with tab1:
+    lang_output = st.radio(label='出力言語', options=(0,1), index=1, horizontal=True, format_func=lambda x: ss.lang_list.get(x))
+    mode = st.radio(label='何をお望みですか？', options=(0,1,2), index=0, horizontal=True, format_func=lambda x: ss.mode_list.get(x))
 
-# 録音プロセス始動
-audio_bytes = audio_recorder(text='何でも話してください',pause_threshold=5)
-    
-# Convert audio to text using OpenAI Whisper API
-if audio_bytes:
-    # 録音
-    lang_input = int(lang_output)
-    textbg = str()
-    if(mode == 0):
-        lang_input = 1 - int(lang_output)   # 翻訳モードの場合、入力言語と出力言語は異なる
-    with st.spinner('処理中...'):
-        text = speech_to_text(audio_bytes, language=ss.lang_code.get(lang_input))
-        if ss.show_text == 1:
-            st.write(text)
+    # 録音プロセス始動
+    audio_bytes = audio_recorder(text='何でも話してください',pause_threshold=5)
+        
+    # Convert audio to text using OpenAI Whisper API
+    if audio_bytes:
+        # 録音
+        lang_input = int(lang_output) if mode > 0 else (1 - int(lang_output))   # 翻訳モードの場合のみ、入力言語と出力言語は異なる
+        textbg = str()
+        with st.spinner('処理中...'):
+            text = speech_to_text(audio_bytes, language=ss.lang_code.get(lang_input))
+            if ss.show_text == 1:
+                st.write(text)
 
-        # 変換
-        textbg = process(task=ss.mode_english.get(mode), lang=ss.lang_english.get(lang_output), content=text, model=str(model_select))
-        if ss.show_text == 1:
-            st.write(textbg)
+            # 変換
+            textbg = process(task=ss.mode_english.get(mode), lang=ss.lang_english.get(lang_output), content=text, model=str(model_select))
+            if ss.show_text == 1:
+                st.write(textbg)
 
+            with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
+                text_to_speech(textbg, temp_file.name)
+                # 再生
+                playaudio(temp_file.name)
+        audio_bytes = None
+
+with tab2:
+    if st.button('単語更新'):
+        wordbg = process(task='Give me a random ', lang=ss.lang_english.get(1), content=' word which is difficult for Japanese people to pronounce.', model=str(model_select))
+        st.write(wordbg)
         with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
-            text_to_speech(textbg, temp_file.name)
+            text_to_speech(wordbg, temp_file.name)
             # 再生
             playaudio(temp_file.name)
 
-# with tab2:
-#     if st.button('発音練習'):
-#         textbg = process(task='Give me some short sentense in', lang=ss.lang_english.get(1), content='', model=str(model_select))
-#         st.write(textbg)
-#         while True:
-#             with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
-#                 text_to_speech(textbg, temp_file.name)
-#                 # 再生
-#                 playaudio(temp_file.name)
-
-#             audio_bytes = audio_recorder(pause_threshold=3)
-#             if audio_bytes:
-#                 text = speech_to_text(audio_bytes, language=ss.lang_code.get(lang_input))
-#                 st.write(text)
-#                 if textbg in text:
-#                     break
+    audio_bytes = audio_recorder(pause_threshold=2)
+    if audio_bytes:
+        text = speech_to_text(audio_bytes, language=ss.lang_code.get(1))
+        st.write(text)
