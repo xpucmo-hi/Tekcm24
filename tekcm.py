@@ -90,6 +90,8 @@ if 'lang_list' not in ss:
     ss.select_lang_list = ['Беларуская', 'Bosanski', 'Български', 'Hrvatski', 'Čeština', 'Magyar', 'Македонски', 'Polski', 'Română', 'Русский', 'Српски', 'Slovenčina', 'Slovenščina', 'Türkçe', 'Українська']
     ss.selected_lang = 2
     ss.show_text = 1
+    ss.ex_sentence = ""
+    ss.ready_to_record = False
     ss.lang_selectbox = {i: ss.select_lang_list[i] for i in range(0, len(ss.select_lang_list))}
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
@@ -143,15 +145,26 @@ with tab1:
         audio_bytes = None
 
 with tab2:
-    if st.button('単語更新'):
-        wordbg = process(task='Give me a random ', lang=ss.lang_english.get(1), content=' word which is difficult for Japanese people to pronounce.', model=str(model_select))
-        st.write(wordbg)
+    length = st.slider("単語数", min_value=1, max_value=10, value = 5)
+    if st.button('例文更新'):
+        content = ' sentence which consists of ' + str(length) + ' words'
+        # wordbg = process(task='Give me a random ', lang=ss.lang_english.get(1), content=' word which is difficult for Japanese people to pronounce.', model=str(model_select))
+        ss.ex_sentence = process(task='Give me a random ', lang=ss.lang_english.get(1), content=content, model=str(model_select))
+        ss.ready_to_record = True
+        audio_bytes = None
+
+        st.write(ss.ex_sentence)
         with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
-            text_to_speech(wordbg, temp_file.name)
+            text_to_speech(ss.ex_sentence, temp_file.name)
             # 再生
             playaudio(temp_file.name)
 
-    audio_bytes = audio_recorder(pause_threshold=2)
+    if ss.ex_sentence:
+        st.write("例文:" + ss.ex_sentence)
+
+    if ss.ready_to_record:
+        audio_bytes = audio_recorder(pause_threshold=2)
     if audio_bytes:
         text = speech_to_text(audio_bytes, language=ss.lang_code.get(1))
-        st.write(text)
+        st.write("あなた:" + text)
+        audio_bytes = None
