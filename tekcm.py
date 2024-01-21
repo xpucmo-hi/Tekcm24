@@ -93,7 +93,10 @@ if 'lang_list' not in ss:
     ss.selected_lang = 2
     ss.show_text = 1
     ss.ex_sentence = ""
+    ss.qa_sentence = ""
     ss.ready_to_record = False
+    ss.waiting = False
+    ss.answer = ""
     ss.lang_selectbox = {i: ss.select_lang_list[i] for i in range(0, len(ss.select_lang_list))}
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
@@ -177,19 +180,41 @@ with tab3:
     if st.button('質問出題'):
         content = ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
         # wordbg = process(task='Give me a random ', lang=ss.lang_english.get(1), content=' word which is difficult for Japanese people to pronounce.', model=str(model_select))
-        sentence = process(task='Make a random ', lang=ss.lang_english.get(1), content=content, model=str(model_select))
+        st.write("問題を聴いて質問に答えてください。")
+        ss.ex_sentence = process(task='Make a random ', lang=ss.lang_english.get(1), content=content, model=str(model_select))
 
-        st.write(sentence)
         with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
-            text_to_speech(sentence, temp_file.name)
+            text_to_speech(ss.ex_sentence, temp_file.name)
             # 再生
             playaudio(temp_file.name)
 
-        content = 'Make a four-choise question from ' + sentence + ' in'
-        question = process(task=content, lang=ss.lang_english.get(1), content=" and put the correct answer to the last word", model=str(model_select))
-        st.write(question)
+        content = 'Make a four-choise question from ' + ss.ex_sentence + ' in'
+        ss.qa_sentence = process(task=content, lang=ss.lang_english.get(1), content=" and put the correct answer to the last word", model=str(model_select))
 
         with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
-            text_to_speech(question, temp_file.name)
+            text_to_speech(ss.qa_sentence, temp_file.name)
             # 再生
             playaudio(temp_file.name)
+        ss.waiting = True
+        ss.answer = ""
+
+    if ss.waiting:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            if st.button('a/а'):
+                ss.answer = 'a/а'
+        with col2:
+            if st.button('b/б'):
+                ss.answer = 'b/б'
+        with col3:
+            if st.button('c/в'):
+                ss.answer = 'c/в'
+        with col4:
+            if st.button('d/г'):
+                ss.answer = 'd/г'
+
+    if len(ss.answer) > 0:
+        ss.waiting = False
+        st.write(ss.ex_sentence)
+        st.write(ss.qa_sentence)
+        st.write("あなたの答え:" + ss.answer)
