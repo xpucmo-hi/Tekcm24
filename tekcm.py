@@ -82,6 +82,8 @@ if 'lang_list' not in ss:
     ss.lang_code = {0: "ja", 1: "bg"}
     ss.lang_english = {0: "Japanese", 1: "Bulgarian"}
     ss.mode_list = {0: "翻訳", 1: "添削", 2: "会話"}
+    ss.topic = {0: "文化", 1: "歴史", 2: "地理", 3: "生活"}
+    ss.topic_english = ['culture', 'history', 'geography', 'life']
     ss.select_show_text = {0: "非表示", 1: "表示"}
     ss.mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
     ss.model_list = ['gpt-3.5-turbo', 'gpt-3.5-turbo-instruct', 'gpt-4']
@@ -111,7 +113,7 @@ if ss.selected_lang != lang_index:
 client = load_client(openai_api_key)
 
 st.title('Tekcm 24 beta')
-tab1, tab2 = st.tabs(["基本", "発音練習"])
+tab1, tab2, tab3 = st.tabs(["基本", "発音練習", "聴解練習"])
 
 if not openai_api_key:
      st.warning('OpenAI API Keyを設定してください')
@@ -168,3 +170,26 @@ with tab2:
         text = speech_to_text(audio_bytes, language=ss.lang_code.get(1))
         st.write("あなた:" + text)
         audio_bytes = None
+
+with tab3:
+    selected_topic = st.radio(label='トピック', options=(0,1,2,3), index=0, horizontal=True, format_func=lambda x: ss.topic.get(x))
+    # length = st.slider("単語数", min_value=1, max_value=10, value = 5)
+    if st.button('質問出題'):
+        content = ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
+        # wordbg = process(task='Give me a random ', lang=ss.lang_english.get(1), content=' word which is difficult for Japanese people to pronounce.', model=str(model_select))
+        sentence = process(task='Make a random ', lang=ss.lang_english.get(1), content=content, model=str(model_select))
+
+        st.write(sentence)
+        with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
+            text_to_speech(sentence, temp_file.name)
+            # 再生
+            playaudio(temp_file.name)
+
+        content = 'Make a four-choise question from ' + sentence + ' in'
+        question = process(task=content, lang=ss.lang_english.get(1), content=" and put the correct answer to the last word", model=str(model_select))
+        st.write(question)
+
+        with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
+            text_to_speech(question, temp_file.name)
+            # 再生
+            playaudio(temp_file.name)
