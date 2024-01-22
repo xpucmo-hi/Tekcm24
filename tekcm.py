@@ -114,7 +114,7 @@ with st.sidebar:
         openai_api_key = st.text_input("OpenAI API Key", key="api_key", type="password")
     if not gemini_api_key:
         gemini_api_key = st.text_input("Gemini API Key", key="geminiapi_key", type="password")
-    model_select = st.selectbox(label='使用モデル', options=ss.model_list, index=0)
+    model_select = st.selectbox(label='使用モデル', options=ss.model_list, index=1)
     lang_index = st.selectbox(label='学習言語', options=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14), index=ss.selected_lang, format_func=lambda x: ss.lang_selectbox.get(x))
     ss.show_text = st.radio(label='文章表示', options=(0,1), index=1, horizontal=True, format_func=lambda x: ss.select_show_text.get(x))
 
@@ -215,27 +215,25 @@ with tab3:
         ss.answer = ""
 
     if ss.waiting:
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4 = st.columns([1,1,1,1])
         with col1:
-            button1 = st.button('а')
+            if st.button('а'):
+                ss.answer = 'а'
+                ss.waiting = False
         with col2:
-            button2 = st.button('б')
+            if st.button('б'):
+                ss.answer = 'б'
+                ss.waiting = False
         with col3:
-            button3 = st.button('в')
+            if st.button('в'):
+                ss.answer = 'в'
+                ss.waiting = False
         with col4:
-            button4 = st.button('г')
-
-        if button1:
-            ss.answer = 'а'
-        if button2:
-            ss.answer = 'б'
-        if button3:
-            ss.answer = 'в'
-        if button4:
-            ss.answer = 'г'
+            if st.button('г'):
+                ss.answer = 'г'
+                ss.waiting = False
 
     if len(ss.answer) > 0:
-        ss.waiting = False
         st.write(ss.ex_sentence)
         st.write(ss.qa_sentence)
         st.write("あなたの答え:" + ss.answer)
