@@ -82,8 +82,8 @@ if 'lang_list' not in ss:
     ss.lang_code = {0: "ja", 1: "bg"}
     ss.lang_english = {0: "Japanese", 1: "Bulgarian"}
     ss.mode_list = {0: "翻訳", 1: "添削", 2: "会話"}
-    ss.topic = {0: "文化", 1: "歴史", 2: "地理", 3: "生活"}
-    ss.topic_english = ['culture', 'history', 'geography', 'life']
+    ss.topic = {0: "文化", 1: "歴史", 2: "地理", 3: "生活", 4: "料理", 5: "小咄"}
+    ss.topic_english = ['culture', 'history', 'geography', 'life', 'cuisine', 'anecdote']
     ss.select_show_text = {0: "非表示", 1: "表示"}
     ss.mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
     ss.model_list = ['gpt-3.5-turbo', 'gpt-3.5-turbo-instruct', 'gpt-4']
@@ -175,7 +175,7 @@ with tab2:
         audio_bytes = None
 
 with tab3:
-    selected_topic = st.radio(label='トピック', options=(0,1,2,3), index=0, horizontal=True, format_func=lambda x: ss.topic.get(x))
+    selected_topic = st.radio(label='トピック', options=(0,1,2,3,4,5), index=0, horizontal=True, format_func=lambda x: ss.topic.get(x))
     # length = st.slider("単語数", min_value=1, max_value=10, value = 5)
     if st.button('質問出題'):
         content = ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
@@ -183,16 +183,16 @@ with tab3:
         st.write("問題を聴いて質問に答えてください。")
         ss.ex_sentence = process(task='Make a random ', lang=ss.lang_english.get(1), content=content, model=str(model_select))
 
-        with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
-            text_to_speech(ss.ex_sentence, temp_file.name)
-            # 再生
-            playaudio(temp_file.name)
+        # with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
+        #     text_to_speech(ss.ex_sentence, temp_file.name)
+        #     # 再生
+        #     playaudio(temp_file.name)
 
         content = 'Make a four-choise question from ' + ss.ex_sentence + ' in'
-        ss.qa_sentence = process(task=content, lang=ss.lang_english.get(1), content=" and put the correct answer to the last word", model=str(model_select))
+        ss.qa_sentence = process(task=content, lang=ss.lang_english.get(1), content=" and add the correct answer to the end of the sentence", model=str(model_select))
 
         with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
-            text_to_speech(ss.qa_sentence, temp_file.name)
+            text_to_speech(ss.ex_sentence + " " + ss.qa_sentence, temp_file.name)
             # 再生
             playaudio(temp_file.name)
         ss.waiting = True
@@ -201,16 +201,16 @@ with tab3:
     if ss.waiting:
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            if st.button('a/а'):
+            if st.button('а'):
                 ss.answer = 'a/а'
         with col2:
-            if st.button('b/б'):
+            if st.button('б'):
                 ss.answer = 'b/б'
         with col3:
-            if st.button('c/в'):
+            if st.button('в'):
                 ss.answer = 'c/в'
         with col4:
-            if st.button('d/г'):
+            if st.button('г'):
                 ss.answer = 'd/г'
 
     if len(ss.answer) > 0:
