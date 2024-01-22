@@ -5,6 +5,7 @@ import time
 import csv
 from openai._client import OpenAI
 from audio_recorder_streamlit import audio_recorder
+import google.generativeai as genai
 from tempfile import NamedTemporaryFile
 
 ss = st.session_state
@@ -23,6 +24,11 @@ st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
 def load_client(api_key):
     return OpenAI(api_key = api_key)
 
+@st.cache_resource
+def load_gemini(api_key):
+    genai.configure(api_key = api_key)
+    return genai.GenerativeModel("gemini-pro")
+
 def speech_to_text(audio_bytes, model='whisper-1', language='ja'):
     with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
         temp_file.write(audio_bytes)
@@ -36,10 +42,12 @@ def speech_to_text(audio_bytes, model='whisper-1', language='ja'):
     return transcription.text
 
 def process(prompt: str, model: str) -> str:
-    # prompt = f"""
-    # {task} {lang}
-    # {content}
-    # """
+    # Gemini使用
+    if "gemini" in model:
+        response = gemini.generate_content(prompt)
+        return response.text
+    
+    # GPT使用
     response = client.chat.completions.create(
         model=model,
         messages=[
@@ -86,7 +94,7 @@ if 'lang_list' not in ss:
     ss.topic_english = ['culture', 'history', 'geography', 'life', 'cuisine', 'anecdote']
     ss.select_show_text = {0: "非表示", 1: "表示"}
     ss.mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
-    ss.model_list = ['gpt-3.5-turbo', 'gpt-3.5-turbo-instruct', 'gpt-4']
+    ss.model_list = ['gpt-3.5-turbo', 'gemini-pro']
     ss.select_lang_code = ['be', 'bs', 'bg', 'hr', 'cs', 'hu', 'mk', 'pl', 'ro', 'ru', 'sr', 'sk', 'sl', 'tk']
     ss.select_lang_english = ['Belarusian', 'Bosnian', 'Bulgarian', 'Croatian', 'Czech', 'Hungarian', 'Macedonian', 'Polish', 'Romanian', 'Russian', 'Serbian', 'Slovak', 'Slovenian', 'Turkish', 'Ukrainian']
     ss.select_lang_list = ['Беларуская', 'Bosanski', 'Български', 'Hrvatski', 'Čeština', 'Magyar', 'Македонски', 'Polski', 'Română', 'Русский', 'Српски', 'Slovenčina', 'Slovenščina', 'Türkçe', 'Українська']
@@ -100,9 +108,12 @@ if 'lang_list' not in ss:
     ss.lang_selectbox = {i: ss.select_lang_list[i] for i in range(0, len(ss.select_lang_list))}
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
+gemini_api_key = os.environ.get("GEMINI_API_KEY")
 with st.sidebar:
     if not openai_api_key:
         openai_api_key = st.text_input("OpenAI API Key", key="api_key", type="password")
+    if not gemini_api_key:
+        gemini_api_key = st.text_input("Gemini API Key", key="geminiapi_key", type="password")
     model_select = st.selectbox(label='使用モデル', options=ss.model_list, index=0)
     lang_index = st.selectbox(label='学習言語', options=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14), index=ss.selected_lang, format_func=lambda x: ss.lang_selectbox.get(x))
     ss.show_text = st.radio(label='文章表示', options=(0,1), index=1, horizontal=True, format_func=lambda x: ss.select_show_text.get(x))
@@ -114,6 +125,8 @@ if ss.selected_lang != lang_index:
     ss.lang_english[1] = ss.select_lang_english[lang_index]
     
 client = load_client(openai_api_key)
+if gemini_api_key:
+    gemini = load_gemini(gemini_api_key)
 
 st.title('Tekcm 24 beta')
 tab1, tab2, tab3 = st.tabs(["基本", "発音練習", "聴解練習"])
@@ -204,17 +217,22 @@ with tab3:
     if ss.waiting:
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            if st.button('а'):
-                ss.answer = 'a/а'
+            button1 = st.button('а')
         with col2:
-            if st.button('б'):
-                ss.answer = 'b/б'
+            button2 = st.button('б')
         with col3:
-            if st.button('в'):
-                ss.answer = 'c/в'
+            button3 = st.button('в')
         with col4:
-            if st.button('г'):
-                ss.answer = 'd/г'
+            button4 = st.button('г')
+
+        if button1:
+            ss.answer = 'а'
+        if button2:
+            ss.answer = 'б'
+        if button3:
+            ss.answer = 'в'
+        if button4:
+            ss.answer = 'г'
 
     if len(ss.answer) > 0:
         ss.waiting = False
