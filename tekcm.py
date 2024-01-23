@@ -104,6 +104,7 @@ if 'lang_list' not in ss:
     ss.qa_sentence = ""
     ss.ready_to_record = False
     ss.waiting = False
+    ss.correct_answer = ""
     ss.answer = ""
     ss.lang_selectbox = {i: ss.select_lang_list[i] for i in range(0, len(ss.select_lang_list))}
 
@@ -152,7 +153,6 @@ with tab1:
                 st.write(text)
 
             # 変換
-            # textbg = process(task=ss.mode_english.get(mode), lang=ss.lang_english.get(lang_output), content=text, model=str(model_select))
             textbg = process(prompt = ss.mode_english.get(mode) + " " + ss.lang_english.get(lang_output) + " " + text, model=str(model_select))
             if ss.show_text == 1:
                 st.write(textbg)
@@ -166,9 +166,8 @@ with tab1:
 with tab2:
     length = st.slider("単語数", min_value=1, max_value=10, value = 5)
     if st.button('例文更新'):
-        content = ' sentence which consists of ' + str(length) + ' words'
-        # ss.ex_sentence = process(task='Give me a random ', lang=ss.lang_english.get(1), content=content, model=str(model_select))
-        ss.ex_sentence = process(prompt='Give me a random ' + ss.lang_english.get(1) + " " + content, model=str(model_select))
+        content = 'Give me a random ' + ss.lang_english.get(1) + ' sentence which consists of ' + str(length) + ' words'
+        ss.ex_sentence = process(prompt=content, model=str(model_select))
         ss.ready_to_record = True
         audio_bytes = None
 
@@ -190,22 +189,16 @@ with tab2:
 
 with tab3:
     selected_topic = st.radio(label='トピック', options=(0,1,2,3,4,5), index=0, horizontal=True, format_func=lambda x: ss.topic.get(x))
-    # length = st.slider("単語数", min_value=1, max_value=10, value = 5)
     if st.button('質問出題'):
-        content = ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
-        # wordbg = process(task='Give me a random ', lang=ss.lang_english.get(1), content=' word which is difficult for Japanese people to pronounce.', model=str(model_select))
+        content = 'Make a random ' + ss.lang_english.get(1) + ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
         st.write("問題を聴いて質問に答えてください。")
-        # ss.ex_sentence = process(task='Make a random ', lang=ss.lang_english.get(1), content=content, model=str(model_select))
-        ss.ex_sentence = process(prompt='Make a random ' + ss.lang_english.get(1) + content, model=str(model_select))
+        ss.ex_sentence = process(prompt=content, model=str(model_select))
 
-        # with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
-        #     text_to_speech(ss.ex_sentence, temp_file.name)
-        #     # 再生
-        #     playaudio(temp_file.name)
-
-        content = 'Make a four-choise question from ' + ss.ex_sentence + ' in '
-        # ss.qa_sentence = process(task=content, lang=ss.lang_english.get(1), content=" and add the correct answer to the end of the sentence", model=str(model_select))
-        ss.qa_sentence = process(prompt=content + ss.lang_english.get(1) + " and add the correct answer to the end of the sentence", model=str(model_select))
+        content = 'Make a four-choise question from ' + ss.ex_sentence + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
+        temp_qa_sentence = process(prompt=content, model=str(model_select))
+        split_qa = temp_qa_sentence.rfind('\n')
+        ss.qa_sentence = temp_qa_sentence[:split_qa]
+        ss.correct_answer = temp_qa_sentence[split_qa:]
 
         with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
             text_to_speech(ss.ex_sentence + " " + ss.qa_sentence, temp_file.name)
@@ -236,4 +229,5 @@ with tab3:
     if len(ss.answer) > 0:
         st.write(ss.ex_sentence)
         st.write(ss.qa_sentence)
-        st.write("あなたの答え:" + ss.answer)
+        st.write("あなたの答え: " + ss.answer)
+        st.write("正答: " + ss.correct_answer)
