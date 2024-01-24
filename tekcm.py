@@ -208,6 +208,15 @@ with tab3:
         ss.answer = ""
 
     if ss.waiting:
+
+        st.write('''<style>
+        [data-testid="column"] {
+            width: calc(25% - 1rem) !important;
+            flex: 1 1 calc(25% - 1rem) !important;
+            min-width: calc(25% - 1rem) !important;
+        }
+        </style>''', unsafe_allow_html=True)
+
         col1, col2, col3, col4 = st.columns([1,1,1,1])
         with col1:
             if st.button('а'):
