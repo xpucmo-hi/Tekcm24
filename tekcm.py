@@ -90,8 +90,8 @@ if 'lang_list' not in ss:
     ss.lang_code = {0: "ja", 1: "bg"}
     ss.lang_english = {0: "Japanese", 1: "Bulgarian"}
     ss.mode_list = {0: "翻訳", 1: "添削", 2: "会話"}
-    ss.topic = {0: "文化", 1: "歴史", 2: "地理", 3: "生活", 4: "料理", 5: "小咄"}
-    ss.topic_english = ['culture', 'history', 'geography', 'life', 'cuisine', 'anecdote']
+    ss.topic = {0: "文化", 1: "歴史", 2: "地理", 3: "生活", 4: "料理", 5: "音楽", 6: "言語", 7: "アネクドート"}
+    ss.topic_english = ['culture', 'history', 'geography', 'life', 'cuisine', 'music', 'language', 'anecdote']
     ss.select_show_text = {0: "非表示", 1: "表示"}
     ss.mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
     ss.model_list = ['gpt-3.5-turbo', 'gemini-pro']
@@ -189,10 +189,10 @@ with tab2:
         audio_bytes = None
 
 with tab3:
-    selected_topic = st.radio(label='トピック', options=(0,1,2,3,4,5), index=0, horizontal=True, format_func=lambda x: ss.topic.get(x))
-    if st.button('質問出題'):
-        st.write("問題を聴いて質問に答えてください。")
-        with st.spinner('処理中...'):
+    selected_topic = st.radio(label='トピック', options=(0,1,2,3,4,5,6,7), index=0, horizontal=True, format_func=lambda x: ss.topic.get(x))
+    if st.button('出題'):
+        st.write("音声を聴いて質問に答えてください。")
+        with st.spinner('準備中...'):
             content = 'Make a random ' + ss.lang_english.get(1) + ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
             ss.ex_sentence = process(prompt=content, model=str(model_select))
 
@@ -245,5 +245,8 @@ with tab3:
     if len(ss.answer) > 0:
         st.write(ss.ex_sentence)
         st.write(ss.qa_sentence)
-        st.write("あなたの答え: " + ss.answer)
+        correct_mark = ''
+        if ss.answer.lower() in ss.correct_answer.lower():
+            correct_mark = ' ◯'
+        st.write("あなたの答え: " + ss.answer + correct_mark)
         st.write("正答: " + ss.correct_answer)
