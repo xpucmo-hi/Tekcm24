@@ -106,6 +106,7 @@ if 'lang_list' not in ss:
     ss.waiting = False
     ss.correct_answer = ""
     ss.answer = ""
+    ss.buttons = ['а', 'б', 'в', 'г']
     ss.lang_selectbox = {i: ss.select_lang_list[i] for i in range(0, len(ss.select_lang_list))}
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
@@ -190,15 +191,16 @@ with tab2:
 with tab3:
     selected_topic = st.radio(label='トピック', options=(0,1,2,3,4,5), index=0, horizontal=True, format_func=lambda x: ss.topic.get(x))
     if st.button('質問出題'):
-        content = 'Make a random ' + ss.lang_english.get(1) + ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
         st.write("問題を聴いて質問に答えてください。")
-        ss.ex_sentence = process(prompt=content, model=str(model_select))
+        with st.spinner('処理中...'):
+            content = 'Make a random ' + ss.lang_english.get(1) + ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
+            ss.ex_sentence = process(prompt=content, model=str(model_select))
 
-        content = 'Make a four-choise question from ' + ss.ex_sentence + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
-        temp_qa_sentence = process(prompt=content, model=str(model_select))
-        split_qa = temp_qa_sentence.rfind('\n')
-        ss.qa_sentence = temp_qa_sentence[:split_qa]
-        ss.correct_answer = temp_qa_sentence[split_qa:]
+            content = 'Make a four-choise question from ' + ss.ex_sentence + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
+            temp_qa_sentence = process(prompt=content, model=str(model_select))
+            split_qa = temp_qa_sentence.rfind('\n')
+            ss.qa_sentence = temp_qa_sentence[:split_qa]
+            ss.correct_answer = temp_qa_sentence[split_qa:]
 
         with NamedTemporaryFile(delete=True, suffix=".wav") as temp_file:
             text_to_speech(ss.ex_sentence + " " + ss.qa_sentence, temp_file.name)
@@ -206,6 +208,11 @@ with tab3:
             playaudio(temp_file.name)
         ss.waiting = True
         ss.answer = ""
+
+        if 'a' in ss.qa_sentence.lower() and 'b' in ss.qa_sentence.lower() and 'c' in ss.qa_sentence.lower() and 'd' in ss.qa_sentence.lower():
+            ss.buttons = ['A', 'B', 'C', 'D']
+        else:
+            ss.buttons = ['а', 'б', 'в', 'г']
 
     if ss.waiting:
 
@@ -219,20 +226,20 @@ with tab3:
 
         col1, col2, col3, col4 = st.columns([1,1,1,1])
         with col1:
-            if st.button('а'):
-                ss.answer = 'а'
+            if st.button(ss.buttons[0]):
+                ss.answer = ss.buttons[0]
                 ss.waiting = False
         with col2:
-            if st.button('б'):
-                ss.answer = 'б'
+            if st.button(ss.buttons[1]):
+                ss.answer = ss.buttons[1]
                 ss.waiting = False
         with col3:
-            if st.button('в'):
-                ss.answer = 'в'
+            if st.button(ss.buttons[2]):
+                ss.answer = ss.buttons[2]
                 ss.waiting = False
         with col4:
-            if st.button('г'):
-                ss.answer = 'г'
+            if st.button(ss.buttons[3]):
+                ss.answer = ss.buttons[3]
                 ss.waiting = False
 
     if len(ss.answer) > 0:
