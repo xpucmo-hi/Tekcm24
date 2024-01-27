@@ -131,7 +131,7 @@ if gemini_api_key:
     gemini = load_gemini(gemini_api_key)
 
 st.title('Tekcm 24 beta')
-tab1, tab2, tab3 = st.tabs(["基本", "発音練習", "聴解練習"])
+tab1, tab2, tab3 = st.tabs(["基本機能", "発音練習", "聴解練習"])
 
 if not openai_api_key:
      st.warning('OpenAI API Keyを設定してください')
@@ -193,11 +193,16 @@ with tab3:
     if st.button('出題'):
         st.write("音声を聴いて質問に答えてください。")
         with st.spinner('準備中...'):
-            content = 'Make a random ' + ss.lang_english.get(1) + ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
-            ss.ex_sentence = process(prompt=content, model=str(model_select))
+            if selected_topic == 6:
+                ss.ex_sentence = ""
+                content = 'Make a four-choise question about ' + ss.lang_english.get(1) + ' grammer, vocabulary or idiom in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
+                temp_qa_sentence = process(prompt=content, model=str(model_select))
+            else:
+                content = 'Make a random ' + ss.lang_english.get(1) + ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
+                ss.ex_sentence = process(prompt=content, model=str(model_select))
 
-            content = 'Make a four-choise question from ' + ss.ex_sentence + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
-            temp_qa_sentence = process(prompt=content, model=str(model_select))
+                content = 'Make a four-choise question from ' + ss.ex_sentence + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
+                temp_qa_sentence = process(prompt=content, model=str(model_select))
             split_qa = temp_qa_sentence.rfind('\n')
             ss.qa_sentence = temp_qa_sentence[:split_qa]
             ss.correct_answer = temp_qa_sentence[split_qa:]
