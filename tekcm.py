@@ -2,7 +2,7 @@ import streamlit as st
 import base64
 import os
 import time
-import csv
+import random
 from openai._client import OpenAI
 from audio_recorder_streamlit import audio_recorder
 import google.generativeai as genai
@@ -195,7 +195,27 @@ with tab3:
         with st.spinner('準備中...'):
             if selected_topic == 6:
                 ss.ex_sentence = ""
-                content = 'Make a four-choise question about ' + ss.lang_english.get(1) + ' grammer, vocabulary or idiom in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
+                subtopics = ['grammer', 'vocabulary', 'idiom', 'colloquial expression']
+                subtopic = subtopics[random.randrange(0, len(subtopics))]
+                content = 'Make a four-choise question about ' + ss.lang_english.get(1) + ' ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
+                temp_qa_sentence = process(prompt=content, model=str(model_select))
+            elif selected_topic == 4 and random.random() < 0.5:
+                ss.ex_sentence = ""
+                subtopics = ['food', 'spices', 'herbs', 'traditional recipe']
+                subtopic = subtopics[random.randrange(0, len(subtopics))]
+                content = 'Make a four-choise question about ' + ss.lang_english.get(1) + ' ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
+                temp_qa_sentence = process(prompt=content, model=str(model_select))
+            elif selected_topic == 5 and random.random() < 0.5 and lang_index == 2:
+                ss.ex_sentence = ""
+                subtopics = ['Bulgarian music instrument', 'Bulgarian folk songs', 'Bulgarian pop-folk music']
+                subtopic = subtopics[random.randrange(0, len(subtopics))]
+                content = 'Make a four-choise question from ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
+                temp_qa_sentence = process(prompt=content, model=str(model_select))
+            elif selected_topic == 7 and random.random() < 0.5 and lang_index == 2:
+                ss.ex_sentence = ""
+                subtopics = ['Gabrovo joke', 'Bulgarian jokes under communism']
+                subtopic = subtopics[random.randrange(0, len(subtopics))]
+                content = 'Make a four-choise question from ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
                 temp_qa_sentence = process(prompt=content, model=str(model_select))
             else:
                 content = 'Make a random ' + ss.lang_english.get(1) + ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
