@@ -199,21 +199,27 @@ with tab3:
                 subtopic = subtopics[random.randrange(0, len(subtopics))]
                 content = 'Make a four-choise question about ' + ss.lang_english.get(1) + ' ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
                 temp_qa_sentence = process(prompt=content, model=str(model_select))
+            elif selected_topic == 0 and random.random() < 0.5:
+                ss.ex_sentence = ""
+                subtopics = ['culture', 'custom', 'festival', 'traditions']
+                subtopic = subtopics[random.randrange(0, len(subtopics))]
+                content = 'Make a four-choise question about ' + ss.lang_english.get(1) + ' ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
+                temp_qa_sentence = process(prompt=content, model=str(model_select))
             elif selected_topic == 4 and random.random() < 0.5:
                 ss.ex_sentence = ""
                 subtopics = ['food', 'spices', 'herbs', 'traditional recipe']
                 subtopic = subtopics[random.randrange(0, len(subtopics))]
                 content = 'Make a four-choise question about ' + ss.lang_english.get(1) + ' ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
                 temp_qa_sentence = process(prompt=content, model=str(model_select))
-            elif selected_topic == 5 and random.random() < 0.5 and lang_index == 2:
+            elif selected_topic == 5 and random.random() < 0.8 and lang_index == 2:
                 ss.ex_sentence = ""
                 subtopics = ['Bulgarian music instrument', 'Bulgarian folk songs', 'Bulgarian pop-folk music']
                 subtopic = subtopics[random.randrange(0, len(subtopics))]
                 content = 'Make a four-choise question from ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
                 temp_qa_sentence = process(prompt=content, model=str(model_select))
-            elif selected_topic == 7 and random.random() < 0.5 and lang_index == 2:
+            elif selected_topic == 7 and random.random() < 0.7 and lang_index == 2:
                 ss.ex_sentence = ""
-                subtopics = ['Gabrovo joke', 'Bulgarian jokes under communism']
+                subtopics = ['Gabrovo humour', 'anecdotes from Gabrovo', 'Bulgarian jokes under communism']
                 subtopic = subtopics[random.randrange(0, len(subtopics))]
                 content = 'Make a four-choise question from ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
                 temp_qa_sentence = process(prompt=content, model=str(model_select))
