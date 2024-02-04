@@ -92,6 +92,16 @@ if 'lang_list' not in ss:
     ss.mode_list = {0: "翻訳", 1: "添削", 2: "会話"}
     ss.topic = {0: "文化", 1: "歴史", 2: "地理", 3: "生活", 4: "料理", 5: "音楽", 6: "言語", 7: "アネクドート"}
     ss.topic_english = ['culture', 'history', 'geography', 'life', 'cuisine', 'music', 'language', 'anecdote']
+    ss.topic_sub = [['culture', 'custom', 'festival', 'traditions', 'national holiday'],
+                    ['historical event', 'historic monuments', 'historic landmark', 'historical person', 'past empire', 'past war', 'history of relationship to Japan'],
+                    ['geography', 'city', 'district', 'sightseeing spot', 'tourist attraction', 'nature', 'climate'],
+                    ['life', 'public transportation', 'stores', 'country life', 'sports'],
+                    ['food', 'spices', 'herbs', 'traditional recipe'],
+                    ['Bulgarian music instrument', 'Bulgarian folk songs', 'Bulgarian pop-folk music'],
+                    ['grammer', 'vocabulary', 'idiom', 'colloquial expression'],
+                    ['Gabrovo humour', 'anecdotes from Gabrovo', 'Bulgarian jokes under communism']]
+    ss.topic_bgmode = [False, False, False, False, False, True, False, True]
+    ss.topic_thres = [0.5, 0.8, 0.8, 0.7, 0.5, 0.5, 1, 0.8]
     ss.select_show_text = {0: "非表示", 1: "表示"}
     ss.mode_english = {0: "Translate this content into", 1: "Correct the grammer of this content in", 2: "Answer this question within 2 sentences in", 3: "Correct the grammer, and answer this question within 3 sentences in"}
     ss.model_list = ['gpt-3.5-turbo', 'gemini-pro']
@@ -193,35 +203,17 @@ with tab3:
     if st.button('出題'):
         st.write("音声を聴いて質問に答えてください。")
         with st.spinner('準備中...'):
-            if selected_topic == 6:
+            if ss.topic_bgmode[selected_topic] == True and lang_index == 2 and random.random() < ss.topic_thres[selected_topic]:
                 ss.ex_sentence = ""
-                subtopics = ['grammer', 'vocabulary', 'idiom', 'colloquial expression']
-                subtopic = subtopics[random.randrange(0, len(subtopics))]
-                content = 'Make a four-choise question about ' + ss.lang_english.get(1) + ' ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
-                temp_qa_sentence = process(prompt=content, model=str(model_select))
-            elif selected_topic == 0 and random.random() < 0.5:
-                ss.ex_sentence = ""
-                subtopics = ['culture', 'custom', 'festival', 'traditions']
-                subtopic = subtopics[random.randrange(0, len(subtopics))]
-                content = 'Make a four-choise question about ' + ss.lang_english.get(1) + ' ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
-                temp_qa_sentence = process(prompt=content, model=str(model_select))
-            elif selected_topic == 4 and random.random() < 0.5:
-                ss.ex_sentence = ""
-                subtopics = ['food', 'spices', 'herbs', 'traditional recipe']
-                subtopic = subtopics[random.randrange(0, len(subtopics))]
-                content = 'Make a four-choise question about ' + ss.lang_english.get(1) + ' ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
-                temp_qa_sentence = process(prompt=content, model=str(model_select))
-            elif selected_topic == 5 and random.random() < 0.8 and lang_index == 2:
-                ss.ex_sentence = ""
-                subtopics = ['Bulgarian music instrument', 'Bulgarian folk songs', 'Bulgarian pop-folk music']
+                subtopics = ss.topic_sub[selected_topic]
                 subtopic = subtopics[random.randrange(0, len(subtopics))]
                 content = 'Make a four-choise question from ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
                 temp_qa_sentence = process(prompt=content, model=str(model_select))
-            elif selected_topic == 7 and random.random() < 0.7 and lang_index == 2:
+            elif ss.topic_bgmode[selected_topic] != True and random.random() < ss.topic_thres[selected_topic]:
                 ss.ex_sentence = ""
-                subtopics = ['Gabrovo humour', 'anecdotes from Gabrovo', 'Bulgarian jokes under communism']
+                subtopics = ss.topic_sub[selected_topic]
                 subtopic = subtopics[random.randrange(0, len(subtopics))]
-                content = 'Make a four-choise question from ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
+                content = 'Make a four-choise question about ' + ss.lang_english.get(1) + ' ' + subtopic + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
                 temp_qa_sentence = process(prompt=content, model=str(model_select))
             else:
                 content = 'Make a random ' + ss.lang_english.get(1) + ' sentence which is related to ' + ss.lang_english.get(1) + ' ' + ss.topic_english[selected_topic] + ' within 20 words'
@@ -229,6 +221,7 @@ with tab3:
 
                 content = 'Make a four-choise question from ' + ss.ex_sentence + ' in ' + ss.lang_english.get(1) + ' and add the correct answer to the end of the sentence'
                 temp_qa_sentence = process(prompt=content, model=str(model_select))
+
             split_qa = temp_qa_sentence.rfind('\n')
             ss.qa_sentence = temp_qa_sentence[:split_qa]
             ss.correct_answer = temp_qa_sentence[split_qa:]
