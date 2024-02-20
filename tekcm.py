@@ -145,7 +145,8 @@ if gemini_api_key:
     gemini = load_gemini(gemini_api_key)
 
 st.title('Tekcm 24 beta')
-tab1, tab2, tab3, tab4 = st.tabs(["基本機能", "発音練習", "聴解練習", "カメラ"])
+# tab1, tab2, tab3, tab4 = st.tabs(["基本機能", "発音練習", "聴解練習", "カメラ"])
+tab1, tab2, tab3 = st.tabs(["基本機能", "発音練習", "聴解練習"])
 
 if not openai_api_key:
      st.warning('OpenAI API Keyを設定してください')
@@ -279,16 +280,16 @@ with tab3:
         st.write("あなたの答え: " + ss.answer + correct_mark)
         st.write("正答: " + ss.correct_answer)
 
-with tab4:
-    multimodal_model = load_gemini_vision()
-    image = st.camera_input("写真を撮る")
-    contents = [image, "Talk about this picture"]
+# with tab4:
+#     multimodal_model = load_gemini_vision()
+#     image = st.camera_input("写真を撮る")
+#     contents = [image, "Talk about this picture in" + ss.lang_english.get(1)]
 
-    # レスポンスの生成
-    if st.button("解析開始"):
-        with st.spinner("解析中..."):
-            responses = multimodal_model.generate_content(contents, stream=True)
+#     # レスポンスの生成
+#     if st.button("解析開始"):
+#         with st.spinner("解析中..."):
+#             responses = multimodal_model.generate_content(contents, stream=True)
 
-            # レスポンスの表示
-            for response in responses:
-                st.write(response.text)
+#             # レスポンスの表示
+#             for response in responses:
+#                 st.write(response.text)
